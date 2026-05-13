@@ -1,8 +1,9 @@
 import { DateTime } from "luxon";
+import { FilterParameter, FilterType } from "@rybbit/shared";
 
 type PlaygroundFilter = {
-  parameter: string;
-  operator: string;
+  parameter: FilterParameter;
+  operator: FilterType;
   value: string;
 };
 
@@ -16,9 +17,7 @@ type CommonQueryParamInput = {
 };
 
 const toUtcDateTimeParam = (date: string, time: string, timeZone: string) =>
-  DateTime.fromISO(`${date}T${time}`, { zone: timeZone })
-    .toUTC()
-    .toFormat("yyyy-MM-dd HH:mm:ss");
+  DateTime.fromISO(`${date}T${time}`, { zone: timeZone }).toUTC().toFormat("yyyy-MM-dd HH:mm:ss");
 
 export const buildCommonQueryParams = ({
   startDate,
@@ -42,11 +41,11 @@ export const buildCommonQueryParams = ({
         };
 
   const apiFilters = filters
-    .filter(f => f.value.trim() !== "")
+    .filter(f => f.operator === "is_null" || f.operator === "is_not_null" || f.value.trim() !== "")
     .map(f => ({
       parameter: f.parameter,
       type: f.operator,
-      value: [f.value],
+      value: f.operator === "is_null" || f.operator === "is_not_null" ? [] : [f.value],
     }));
 
   if (apiFilters.length > 0) {

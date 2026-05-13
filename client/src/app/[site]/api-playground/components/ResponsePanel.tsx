@@ -129,7 +129,7 @@ export function ResponsePanel() {
           </div>
         ) : (
           <div className="p-3 bg-neutral-100 dark:bg-neutral-800 rounded text-xs text-neutral-500 dark:text-neutral-400">
-            {t('Click "Execute Request" to see the response')}
+            {t('Click "Run" to see the response')}
           </div>
         )}
       </div>

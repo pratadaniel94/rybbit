@@ -92,7 +92,10 @@ export function ParameterControls() {
       const queryParams: Record<string, any> = {};
 
       if (selectedEndpoint.hasCommonParams) {
-        Object.assign(queryParams, buildCommonQueryParams({ startDate, endDate, startTime, endTime, timeZone, filters }));
+        Object.assign(
+          queryParams,
+          buildCommonQueryParams({ startDate, endDate, startTime, endTime, timeZone, filters })
+        );
       }
 
       // Add endpoint-specific params
@@ -156,6 +159,8 @@ export function ParameterControls() {
     });
   };
 
+  const getParamMetadata = (param: string) => selectedEndpoint.parameterMetadata?.[param] ?? parameterMetadata[param];
+
   return (
     <div className="h-full overflow-y-auto p-4 space-y-6">
       {/* Header */}
@@ -206,7 +211,7 @@ export function ParameterControls() {
             {t("Path Parameters")}
           </h3>
           {selectedEndpoint.pathParams.map(param => {
-            const meta = parameterMetadata[param];
+            const meta = getParamMetadata(param);
             return (
               <div key={param} className="space-y-1">
                 <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -280,7 +285,7 @@ export function ParameterControls() {
             {selectedEndpoint.hasCommonParams ? t("Additional Parameters") : t("Parameters")}
           </h3>
           {selectedEndpoint.specificParams.map(param => {
-            const meta = parameterMetadata[param];
+            const meta = getParamMetadata(param);
             const isRequired = selectedEndpoint.requiredParams?.includes(param);
             if (!meta) {
               return (
