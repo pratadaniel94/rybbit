@@ -817,13 +817,11 @@
         }));
       }));
     }
-    return {
-      get firstHiddenTime() {
-        return u;
-      }, onHidden(e2) {
-        l.add(e2);
-      }
-    };
+    return { get firstHiddenTime() {
+      return u;
+    }, onHidden(e2) {
+      l.add(e2);
+    } };
   };
   var g = (e2) => {
     document.prerendering ? addEventListener("prerenderingchange", (() => e2()), true) : e2();
@@ -1212,7 +1210,7 @@
   };
 
   // index.ts
-  (async function () {
+  (async function() {
     const scriptTag = document.currentScript;
     if (!scriptTag) {
       console.error("Could not find current script tag");
@@ -1306,7 +1304,7 @@
     const trackPageview = () => tracker.trackPageview();
     const debouncedTrackPageview = config.debounceDuration > 0 ? debounce(trackPageview, config.debounceDuration) : trackPageview;
     function setupEventListeners() {
-      document.addEventListener("click", function (e2) {
+      document.addEventListener("click", function(e2) {
         let target = e2.target;
         while (target && target !== document.documentElement) {
           if (target.hasAttribute("data-rybbit-event")) {
@@ -1335,12 +1333,12 @@
       if (config.autoTrackSpa) {
         const originalPushState = history.pushState;
         const originalReplaceState = history.replaceState;
-        history.pushState = function (...args) {
+        history.pushState = function(...args) {
           originalPushState.apply(this, args);
           debouncedTrackPageview();
           tracker.onPageChange();
         };
-        history.replaceState = function (...args) {
+        history.replaceState = function(...args) {
           originalReplaceState.apply(this, args);
           debouncedTrackPageview();
           tracker.onPageChange();

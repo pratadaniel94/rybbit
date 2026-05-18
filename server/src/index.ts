@@ -65,7 +65,7 @@ import {
   gscCallback,
   selectGSCProperty,
 } from "./api/gsc/index.js";
-import { updateInvitationSiteAccess, updateMemberSiteAccess } from "./api/memberAccess/index.js";
+import { updateMemberSiteAccess } from "./api/memberAccess/index.js";
 import { listTeams, createTeam, updateTeam, deleteTeam } from "./api/teams/index.js";
 import {
   deleteSessionReplay,
@@ -325,13 +325,6 @@ async function organizationsRoutes(fastify: FastifyInstance) {
 
   // Member site access management (admin/owner only)
   fastify.put("/organizations/:organizationId/members/:memberId/sites", orgAdminParams, updateMemberSiteAccess);
-
-  // Invitation site access management (admin/owner only)
-  fastify.put(
-    "/organizations/:organizationId/invitations/:invitationId/sites",
-    orgAdminParams,
-    updateInvitationSiteAccess
-  );
 }
 
 async function teamsRoutes(fastify: FastifyInstance) {

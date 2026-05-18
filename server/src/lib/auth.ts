@@ -2,14 +2,14 @@ import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { admin, captcha, emailOTP, organization } from "better-auth/plugins";
 import dotenv from "dotenv";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import pg from "pg";
 import { dash } from "@better-auth/infra";
 import { apiKey } from "@better-auth/api-key"
 
 import { db } from "../db/postgres/postgres.js";
 import * as schema from "../db/postgres/schema.js";
-import { invitation, member, memberSiteAccess, user } from "../db/postgres/schema.js";
+import { invitation, member, memberSiteAccess, sites, user } from "../db/postgres/schema.js";
 import { invalidateSitesAccessCache } from "./auth-utils.js";
 import { API_RATE_LIMIT_WINDOW, DISABLE_SIGNUP, IS_CLOUD, STANDARD_API_RATE_LIMIT } from "./const.js";
 import {
@@ -45,6 +45,55 @@ const pluginList = [
       enabled: true,
     },
     organizationHooks: {
+      beforeCreateInvitation: async ({ invitation: newInvitation }) => {
+        const invite = newInvitation as typeof newInvitation & {
+          hasRestrictedSiteAccess?: boolean;
+          siteIds?: number[];
+        };
+        const hasRestrictedSiteAccess = invite.hasRestrictedSiteAccess === true;
+
+        if (!hasRestrictedSiteAccess) {
+          return {
+            data: {
+              hasRestrictedSiteAccess: false,
+              siteIds: [],
+            },
+          };
+        }
+
+        if (invite.role !== "member") {
+          throw new APIError("BAD_REQUEST", {
+            message: "Site access restrictions can only be applied to member invitations",
+          });
+        }
+
+        const uniqueSiteIds = Array.from(new Set(invite.siteIds ?? []));
+        if (uniqueSiteIds.length === 0) {
+          throw new APIError("BAD_REQUEST", {
+            message: "At least one site is required when restricting invitation access",
+          });
+        }
+
+        const validSites = await db
+          .select({ siteId: sites.siteId })
+          .from(sites)
+          .where(and(eq(sites.organizationId, invite.organizationId), inArray(sites.siteId, uniqueSiteIds)));
+        const validSiteIds = new Set(validSites.map(site => site.siteId));
+        const invalidSiteIds = uniqueSiteIds.filter(siteId => !validSiteIds.has(siteId));
+
+        if (invalidSiteIds.length > 0) {
+          throw new APIError("BAD_REQUEST", {
+            message: `Sites do not belong to organization: ${invalidSiteIds.join(", ")}`,
+          });
+        }
+
+        return {
+          data: {
+            hasRestrictedSiteAccess: true,
+            siteIds: uniqueSiteIds,
+          },
+        };
+      },
       afterRemoveMember: async ({ member: removedMember, user: removedUser, organization: org }) => {
         // Clear any pending/accepted invitations for this user+org so a stale
         // invite can't be re-accepted and recreate access after removal.
@@ -68,6 +117,22 @@ const pluginList = [
       );
     },
     schema: {
+      invitation: {
+        additionalFields: {
+          hasRestrictedSiteAccess: {
+            type: "boolean",
+            required: false,
+            defaultValue: false,
+            fieldName: "has_restricted_site_access",
+          },
+          siteIds: {
+            type: "number[]",
+            required: false,
+            defaultValue: [],
+            fieldName: "site_ids",
+          },
+        },
+      },
       organization: {
         additionalFields: {
           stripeCustomerId: {
