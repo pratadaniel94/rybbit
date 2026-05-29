@@ -63,6 +63,40 @@ export type {
   UpdateGoalParams,
 } from "./goals";
 
+// Feature flag endpoints
+export { fetchFeatureFlags, createFeatureFlag, updateFeatureFlag, deleteFeatureFlag } from "./featureFlags";
+export type {
+  FeatureFlag,
+  FeatureFlagConditionSet,
+  FeatureFlagPayload,
+  FeatureFlagPayloadValue,
+  FeatureFlagRule,
+  FeatureFlagRuntime,
+  FeatureFlagStats,
+  FeatureFlagType,
+  FeatureFlagUpdatePayload,
+  FeatureFlagVariant,
+} from "./featureFlags";
+
+// Experiment endpoints
+export {
+  createExperiment,
+  deleteExperiment,
+  fetchExperimentResults,
+  fetchExperiments,
+  updateExperiment,
+} from "./experiments";
+export type {
+  Experiment,
+  ExperimentFeatureFlag,
+  ExperimentGoal,
+  ExperimentPayload,
+  ExperimentResults,
+  ExperimentStatus,
+  ExperimentUpdatePayload,
+  ExperimentVariantResult,
+} from "./experiments";
+
 // Funnels endpoints
 export { fetchFunnels, analyzeFunnel, fetchFunnelStepSessions, saveFunnel, deleteFunnel } from "./funnels";
 export type {

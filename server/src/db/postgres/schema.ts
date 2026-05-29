@@ -324,6 +324,114 @@ export const goals = pgTable(
   ]
 );
 
+export type FeatureFlagType = "boolean" | "multivariate" | "remote_config";
+export type FeatureFlagRuntime = "client" | "server" | "both";
+export type ExperimentStatus = "draft" | "running" | "paused" | "completed";
+
+export type FeatureFlagPayloadValue =
+  | string
+  | number
+  | boolean
+  | null
+  | FeatureFlagPayloadValue[]
+  | { [key: string]: FeatureFlagPayloadValue };
+
+export type FeatureFlagRule = {
+  field:
+    | "hostname"
+    | "pathname"
+    | "query"
+    | "referrer"
+    | "language"
+    | "country"
+    | "region"
+    | "city"
+    | "device_type"
+    | "user_id"
+    | "trait";
+  key?: string;
+  operator: "equals" | "not_equals" | "contains" | "starts_with" | "ends_with" | "regex";
+  value: string | number | boolean | Array<string | number | boolean>;
+};
+
+export type FeatureFlagVariant = {
+  key: string;
+  name?: string;
+  rolloutPercentage: number;
+  payload?: FeatureFlagPayloadValue;
+};
+
+export type FeatureFlagConditionSet = {
+  name?: string;
+  rules: FeatureFlagRule[];
+  rolloutPercentage?: number;
+  variants?: FeatureFlagVariant[];
+  payload?: FeatureFlagPayloadValue;
+};
+
+export const featureFlags = pgTable(
+  "feature_flags",
+  {
+    flagId: serial("flag_id").primaryKey().notNull(),
+    siteId: integer("site_id")
+      .notNull()
+      .references(() => sites.siteId, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    description: text("description"),
+    enabled: boolean("enabled").default(false).notNull(),
+    runtime: text("runtime").default("client").notNull().$type<FeatureFlagRuntime>(),
+    flagType: text("flag_type").default("boolean").notNull().$type<FeatureFlagType>(),
+    payload: jsonb("payload").$type<FeatureFlagPayloadValue>(),
+    variants: jsonb("variants").default([]).notNull().$type<FeatureFlagVariant[]>(),
+    rolloutPercentage: integer("rollout_percentage").default(100).notNull(),
+    rules: jsonb("rules").default([]).notNull().$type<FeatureFlagRule[]>(),
+    conditionSets: jsonb("condition_sets").default([]).notNull().$type<FeatureFlagConditionSet[]>(),
+    salt: text("salt")
+      .default(sql`md5(random()::text || clock_timestamp()::text)`)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+  },
+  table => [
+    unique("feature_flags_site_key_unique").on(table.siteId, table.key),
+    index("feature_flags_site_idx").on(table.siteId),
+    check("feature_flags_rollout_check", sql`rollout_percentage >= 0 AND rollout_percentage <= 100`),
+    check("feature_flags_runtime_check", sql`runtime IN ('client', 'server', 'both')`),
+    check("feature_flags_type_check", sql`flag_type IN ('boolean', 'multivariate', 'remote_config')`),
+  ]
+);
+
+export const experiments = pgTable(
+  "experiments",
+  {
+    experimentId: serial("experiment_id").primaryKey().notNull(),
+    siteId: integer("site_id")
+      .notNull()
+      .references(() => sites.siteId, { onDelete: "cascade" }),
+    featureFlagId: integer("feature_flag_id")
+      .notNull()
+      .references(() => featureFlags.flagId, { onDelete: "cascade" }),
+    primaryGoalId: integer("primary_goal_id").references(() => goals.goalId, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    hypothesis: text("hypothesis"),
+    status: text("status").default("draft").notNull().$type<ExperimentStatus>(),
+    winningVariant: text("winning_variant"),
+    startedAt: timestamp("started_at", { mode: "string" }),
+    endedAt: timestamp("ended_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+  },
+  table => [
+    unique("experiments_site_flag_unique").on(table.siteId, table.featureFlagId),
+    index("experiments_site_idx").on(table.siteId),
+    index("experiments_feature_flag_idx").on(table.featureFlagId),
+    index("experiments_primary_goal_idx").on(table.primaryGoalId),
+    check("experiments_status_check", sql`status IN ('draft', 'running', 'paused', 'completed')`),
+  ]
+);
+
 // Telemetry table for tracking self-hosted instances
 export const telemetry = pgTable("telemetry", {
   id: serial("id").primaryKey().notNull(),

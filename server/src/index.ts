@@ -61,6 +61,21 @@ import {
 } from "./api/analytics/index.js";
 import { getConfig, getVersion } from "./api/getConfig.js";
 import {
+  createExperiment,
+  deleteExperiment,
+  getExperimentResults,
+  getExperiments,
+  updateExperiment,
+} from "./api/experiments/index.js";
+import {
+  createFeatureFlag,
+  deleteFeatureFlag,
+  evaluateFeatureFlags,
+  evaluateServerFeatureFlags,
+  getFeatureFlags,
+  updateFeatureFlag,
+} from "./api/featureFlags/index.js";
+import {
   connectGSC,
   disconnectGSC,
   getGSCData,
@@ -276,6 +291,17 @@ async function analyticsRoutes(fastify: FastifyInstance) {
   fastify.post("/sites/:siteId/goals", authSite, createGoal);
   fastify.delete("/sites/:siteId/goals/:goalId", authSite, deleteGoal);
   fastify.put("/sites/:siteId/goals/:goalId", authSite, updateGoal);
+  fastify.get("/sites/:siteId/feature-flags", authSite, getFeatureFlags);
+  fastify.post("/sites/:siteId/feature-flags", adminSite, createFeatureFlag);
+  fastify.put("/sites/:siteId/feature-flags/:flagId", adminSite, updateFeatureFlag);
+  fastify.delete("/sites/:siteId/feature-flags/:flagId", adminSite, deleteFeatureFlag);
+  fastify.post("/sites/:siteId/feature-flags/evaluate", authSite, evaluateServerFeatureFlags);
+  fastify.post("/site/:siteId/feature-flags/evaluate", evaluateFeatureFlags);
+  fastify.get("/sites/:siteId/experiments", authSite, getExperiments);
+  fastify.post("/sites/:siteId/experiments", adminSite, createExperiment);
+  fastify.put("/sites/:siteId/experiments/:experimentId", adminSite, updateExperiment);
+  fastify.delete("/sites/:siteId/experiments/:experimentId", adminSite, deleteExperiment);
+  fastify.get("/sites/:siteId/experiments/:experimentId/results", authSite, getExperimentResults);
   fastify.get("/sites/:siteId/events/names", publicSite, getEventNames);
   fastify.get("/sites/:siteId/events/properties", publicSite, getEventProperties);
   fastify.get("/sites/:siteId/events/outbound", publicSite, getOutboundLinks);
