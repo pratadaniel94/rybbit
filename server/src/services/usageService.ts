@@ -137,11 +137,6 @@ class UsageService {
     },
     stripeSubscriptions: Map<string, Stripe.Subscription>
   ): Promise<[number, string | null]> {
-    // Special case for specific organizations
-    if (orgData.name === "rybbit" || orgData.name === "Zam") {
-      return [Infinity, this.getStartOfMonth()];
-    }
-
     // Resolve this org's Stripe subscription from the bulk snapshot (no per-org Stripe call),
     // then layer in custom plan / override / AppSumo via the same priority rules as elsewhere.
     const stripeSub = stripeSubscriptionInfoFromSnapshot(stripeSubscriptions, orgData.stripeCustomerId);
@@ -267,12 +262,7 @@ class UsageService {
           const isOverLimit = eventCount > eventLimit;
 
           let sendApproaching = false;
-          if (
-            !alreadyNotifiedApproaching &&
-            !isOverLimit &&
-            Number.isFinite(eventLimit) &&
-            daysRemaining >= 2
-          ) {
+          if (!alreadyNotifiedApproaching && !isOverLimit && Number.isFinite(eventLimit) && daysRemaining >= 2) {
             const projected = daysElapsed >= 1 ? eventCount * (totalDaysInMonth / daysElapsed) : 0;
             const trigger90 = eventCount >= eventLimit * 0.9;
             const triggerProjection = daysElapsed >= 7 && projected >= eventLimit;
@@ -328,9 +318,7 @@ class UsageService {
                 }
               }
             } else {
-              this.logger.warn(
-                `No owners found for organization ${orgData.name}, skipping approaching-limit email`
-              );
+              this.logger.warn(`No owners found for organization ${orgData.name}, skipping approaching-limit email`);
             }
           }
 
